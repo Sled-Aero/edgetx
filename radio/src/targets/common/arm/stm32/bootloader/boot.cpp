@@ -94,9 +94,12 @@ uint32_t eepromWritten = 0;
 FlashCheckRes valid;
 MemoryType memoryType;
 uint32_t unlocked = 0;
+uint32_t timer10MsCount;
+
 
 void interrupt10ms()
 {
+  timer10MsCount++;
   tenms |= 1u; // 10 mS has passed
   g_tmr10ms++;
 
@@ -116,6 +119,7 @@ void interrupt10ms()
 
 void init10msTimer()
 {
+  timer10MsCount = 0;
   INTERRUPT_xMS_TIMER->ARR = 9999;  // 10mS in uS
   INTERRUPT_xMS_TIMER->PSC = (PERI1_FREQUENCY * TIMER_MULT_APB1) / 1000000 - 1; // 1uS
   INTERRUPT_xMS_TIMER->CCER = 0;
@@ -124,6 +128,11 @@ void init10msTimer()
   INTERRUPT_xMS_TIMER->CR1 = 5;
   INTERRUPT_xMS_TIMER->DIER |= 1;
   NVIC_EnableIRQ(INTERRUPT_xMS_IRQn);
+}
+
+extern "C" uint32_t HAL_GetTick(void)
+{
+    return timer10MsCount*10;
 }
 
 #if !defined(SIMU)
