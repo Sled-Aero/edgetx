@@ -505,7 +505,7 @@ void checkBacklight()
     }
 
     if (requiredBacklightBright == BACKLIGHT_FORCED_ON) {
-      currentBacklightBright = g_eeGeneral.backlightBright;
+      currentBacklightBright = g_eeGeneral.getRadioSettingsBrightness();
       BACKLIGHT_ENABLE();
     } else {
       bool backlightOn = ((g_eeGeneral.backlightMode == e_backlight_mode_on) ||
@@ -1524,7 +1524,8 @@ void opentxInit()
   initSerialPorts();
 
   currentSpeakerVolume = requiredSpeakerVolume = g_eeGeneral.speakerVolume + VOLUME_LEVEL_DEF;
-  currentBacklightBright = requiredBacklightBright = g_eeGeneral.backlightBright;
+  currentBacklightBright = requiredBacklightBright = g_eeGeneral.getRadioSettingsBrightness();
+
 #if !defined(SOFTWARE_VOLUME)
   setScaledVolume(currentSpeakerVolume);
 #endif
