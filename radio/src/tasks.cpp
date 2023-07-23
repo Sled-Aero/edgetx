@@ -21,6 +21,7 @@
 
 #include "opentx.h"
 #include "timers_driver.h"
+#include "hal/abnormal_reboot.h"
 
 #include "tasks.h"
 #include "tasks/mixer_task.h"

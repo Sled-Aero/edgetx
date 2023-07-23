@@ -34,8 +34,7 @@
 // #include "keys.h"
 #include "debug.h"
 
-#include "watchdog_driver.h"
-
+#include "hal/abnormal_reboot.h"
 #include "hal/rotary_encoder.h"
 
 #if defined(DEBUG_SEGGER_RTT)
@@ -332,13 +331,10 @@ int  bootloaderMain()
 
 #if defined(PWR_BUTTON_PRESS)
   // wait until power button is released
-  while (pwrPressed()) {
-    WDG_RESET();
-  }
+  while (pwrPressed()) {}
 #endif
 
   for (;;) {
-    WDG_RESET();
 
     if (tenms) {
       tenms = 0;
