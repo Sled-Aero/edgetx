@@ -148,6 +148,79 @@ rxStatStruct *getRxStatLabels() {
 // lower.
 volatile uint8_t _telemetryIsPolling = false;
 
+static void (*telemetryPassthroughSendByte)(void*, uint8_t) = nullptr;
+static void* telemetryPassthroughSendByteCtx = nullptr;
+
+void telemetrySetPassthroughCb(void* ctx, void (*cb)(void*, uint8_t))
+{
+  telemetryPassthroughSendByte = nullptr;
+  telemetryPassthroughSendByteCtx = ctx;
+  telemetryPassthroughSendByte = cb;
+}
+
+void telemetryPassthroughSend(uint8_t data)
+{
+  auto _sendByte = telemetryPassthroughSendByte;
+  auto _ctx = telemetryPassthroughSendByteCtx;
+
+  if (_sendByte) {
+    _sendByte(_ctx, data);
+  }
+}
+
+static const etx_serial_driver_t* telemetryPassthroughDriver = nullptr;
+static void* telemetryPassthroughCtx = nullptr;
+
+#define TELEM_PASSTHROUGH_SERIAL_BUFFER_SIZE 64 // same as TELEMETRY_OUTPUT_BUFFER_SIZE
+static uint8_t telemetryPassthroughSerialBuffer[TELEM_PASSTHROUGH_SERIAL_BUFFER_SIZE];
+static uint32_t telemetryPassthroughSerialBufferSize = 0;
+
+#define TELEM_PASSTHROUGH_SERIAL_SEND_TIMEOUT 3 // 10s of milliseconds
+static tmr10ms_t telemetryPassthroughSerialDeadline = 0;
+
+static void telemetryPassthroughReceiveData(uint8_t* buf, uint32_t len)
+{
+  TRACE("TP new receive %d", len);
+
+  telemetryPassthroughSerialDeadline = get_tmr10ms() + TELEM_PASSTHROUGH_SERIAL_SEND_TIMEOUT;
+  for (uint32_t i=0; i<len; i++) {
+    if (telemetryPassthroughSerialBufferSize < TELEM_PASSTHROUGH_SERIAL_BUFFER_SIZE) {
+      telemetryPassthroughSerialBuffer[telemetryPassthroughSerialBufferSize++] = buf[i];
+    }
+  }
+}
+
+void telemetryPassthroughSendSerialToRadio()
+{
+  if (telemetryPassthroughSerialBufferSize > 0 && get_tmr10ms() > telemetryPassthroughSerialDeadline) {
+    TRACE("TP sending buffer %d", telemetryPassthroughSerialBufferSize);
+    TRACE("TP was it ready? %d", outputTelemetryBuffer.isAvailable());
+
+    outputTelemetryBuffer.reset();
+
+    for (uint32_t i=0; i<telemetryPassthroughSerialBufferSize; i++) {
+      outputTelemetryBuffer.pushByte(telemetryPassthroughSerialBuffer[i]);
+    }
+    telemetryPassthroughSerialBufferSize = 0;
+
+    outputTelemetryBuffer.setDestination(TELEMETRY_ENDPOINT_SPORT);
+  }
+}
+
+void telemetrySetPassthroughDriver(void* ctx, const etx_serial_driver_t* drv)
+{
+  telemetryPassthroughDriver = nullptr;
+  telemetryPassthroughCtx = ctx;
+  telemetryPassthroughDriver = drv;
+
+  if (drv) {
+    if (drv->setReceiveCb) drv->setReceiveCb(ctx, telemetryPassthroughReceiveData);
+    telemetrySetPassthroughCb(ctx, drv->sendByte);
+  } else {
+    telemetrySetPassthroughCb(nullptr, nullptr);
+  }
+}
+
 static void (*telemetryMirrorSendByte)(void*, uint8_t) = nullptr;
 static void* telemetryMirrorSendByteCtx = nullptr;
 
@@ -269,6 +342,8 @@ inline bool isBadAntennaDetected()
 
 static inline void pollTelemetry(uint8_t module, const etx_proto_driver_t* drv, void* ctx)
 {
+  telemetryPassthroughSendSerialToRadio();
+
   if (!drv || !drv->processData) return;
 
   auto mod_st = (etx_module_state_t*)ctx;
@@ -286,6 +361,7 @@ static inline void pollTelemetry(uint8_t module, const etx_proto_driver_t* drv, 
     LOG_TELEMETRY_WRITE_START();
     do {
       telemetryMirrorSend(data);
+      telemetryPassthroughSend(data);
       drv->processData(ctx, data, rxBuffer, &rxBufferCount);
       LOG_TELEMETRY_WRITE_BYTE(data);
     } while (serial_drv->getByte(serial_ctx, &data) > 0);

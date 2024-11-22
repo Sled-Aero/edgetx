@@ -1,3 +1,21 @@
+**This fork adds support for bi-directional telemetry passthrough over usb serial**
+
+Select `USB Serial (VCP)` when plugging in usb cable to top of tx16s (warning: may need to flip cable when plugging in)
+
+Magic command to set up cmake:
+```bash
+QTDIR="/Users/liam/src/sled/qt-5.12.9/clang_64" QT_PLUGIN_PATH=$QTDIR/plugins cmake -DPCB=X10 -DPCBREV=TX16S \
+   -DCMAKE_PREFIX_PATH=$QTDIR \
+   -DGCC_ARM_PATH=/Applications/ArmGNUToolchain/12.3.rel1/arm-none-eabi/bin/ \
+   -DPYTHON_EXECUTABLE=/Users/liam/.pyenv/versions/3.11.3/bin/python ..
+```
+
+Can add `-DDEBUG=Y` to cmake command to enable serial port logging (left serial port on bottom of tx16s, 3.3 volts on rx/tx, `picocom /dev/tty.usbserial-ABSCDIYI -b 400000`) (might be enabled without DEBUG anyway?)
+
+Follow build instructions for mac https://github.com/EdgeTX/edgetx/wiki/Build-instructions-using-macOS-14.1-%28Sonoma%29
+
+Flash via bootloader with firmware on sd card https://manual.edgetx.org/installing-and-updating-edgetx/update-from-an-earlier-version-of-edgetx-using-the-bootloader
+
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/Edgetx/edgetx)](https://github.com/EdgeTX/edgetx/releases/latest)
 [![GitHub all releases](https://img.shields.io/github/downloads/EdgeTX/edgetx/total)](https://github.com/EdgeTX/edgetx/releases)
 [![GitHub license](https://img.shields.io/github/license/Edgetx/edgetx)](https://github.com/EdgeTX/edgetx/blob/main/LICENSE)

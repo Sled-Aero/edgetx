@@ -93,6 +93,7 @@ static void setupPulsesCrossfire(uint8_t module, uint8_t*& p_buf,
 #if defined(LUA)
   if (outputTelemetryBuffer.destination == endpoint) {
     auto len = outputTelemetryBuffer.size;
+    TRACE("outputTelemetryBuffer sending %d", len);
     memcpy(p_buf, outputTelemetryBuffer.data, len);
     outputTelemetryBuffer.reset();
     p_buf += len;

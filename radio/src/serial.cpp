@@ -234,6 +234,10 @@ static void serialSetCallBacks(int mode, void* ctx, const etx_serial_port_t* por
     telemetrySetMirrorCb(ctx, sendByte);
     break;
 
+  case UART_MODE_TELEMETRY_PASSTHROUGH:
+    telemetrySetPassthroughDriver(ctx, drv);
+    break;
+
 #if defined(CLI) && !defined(SIMU)
   case UART_MODE_CLI:
     cliSetSerialDriver(ctx, drv);
@@ -290,6 +294,7 @@ static void serialSetupPort(int mode, etx_serial_init& params)
 #endif
 
 #if !defined(BOOT)
+  case UART_MODE_TELEMETRY_PASSTHROUGH:
   case UART_MODE_TELEMETRY_MIRROR:
     // TODO: query telemetry baudrate / add setting for module
 #if defined(CROSSFIRE)
