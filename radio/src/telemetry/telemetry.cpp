@@ -305,6 +305,7 @@ static void _poll_frame(void *pvParameter1, uint32_t ulParameter2)
     LOG_TELEMETRY_WRITE_START();
     for (int i = 0; i < frame_len; i++) {
       telemetryMirrorSend(frame[i]);
+      telemetryPassthroughSend(frame[i]);
       LOG_TELEMETRY_WRITE_BYTE(frame[i]);
     }
 
